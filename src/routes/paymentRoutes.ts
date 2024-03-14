@@ -24,6 +24,7 @@ router.get("/customer/:id", async (req: Request, res: Response) => {
 
 router.post("/", async (req: Request, res: Response) => {
   const {amount} = req.body
+  
   const stripe = new Stripe(secret_key as string, {
     apiVersion: "2023-10-16",
     typescript: true,
@@ -50,11 +51,16 @@ router.post("/", async (req: Request, res: Response) => {
       payment_method_types: ["card"],
     });
 
+    const setupIntents = await stripe.setupIntents.create({
+      customer: customer.id,
+      payment_method_types: ["card"],
+    });
 
     res.status(200).json({
       paymentIntent: paymentIntent.client_secret,
       ephemeralKey: ephemeralKey.secret,
       customer: customer.id,
+      setupIntents: setupIntents.client_secret
     });
   } catch (error: any) {
     res.status(500).json({ error: error.message });

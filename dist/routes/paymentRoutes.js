@@ -43,10 +43,15 @@ router.post("/", async (req, res) => {
             customer: customer.id,
             payment_method_types: ["card"],
         });
+        const setupIntents = await stripe.setupIntents.create({
+            customer: customer.id,
+            payment_method_types: ["card"],
+        });
         res.status(200).json({
             paymentIntent: paymentIntent.client_secret,
             ephemeralKey: ephemeralKey.secret,
             customer: customer.id,
+            setupIntents: setupIntents.client_secret
         });
     }
     catch (error) {
