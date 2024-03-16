@@ -4,7 +4,6 @@ import multer from "multer";
 import path from "path";
 import Stripe from "stripe";
 
-
 import User from "../models/users";
 
 const router = express.Router();
@@ -21,31 +20,52 @@ router.get("/", async (req: Request, res: Response) => {
   }
 });
 
-router.post("/users", upload.single("img"), async (req: Request, res: Response) => {
-  try {
-    const { name, email, password, phone, stripeCustomerId } = req.body;
-    const img = req.file ? req.file.path : null;
+router.post(
+  "/users",
+  upload.single("img"),
+  async (req: Request, res: Response) => {
+    try {
+      const { name, email, password, phone, stripeCustomerId } = req.body;
+      const img = req.file ? req.file.path : null;
 
-    const newUser = new User({ name, email, password, phone, img, stripeCustomerId });
-    const savedUser = await newUser.save();
+      const newUser = new User({
+        name,
+        email,
+        password,
+        phone,
+        img,
+        stripeCustomerId,
+      });
+      const savedUser = await newUser.save();
 
-    res.status(201).json({ success: true, data: savedUser, message: "User created" });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
+      res
+        .status(201)
+        .json({ success: true, data: savedUser, message: "User created" });
+    } catch (error: any) {
+      res.status(500).json({ error: error.message });
+    }
   }
-});
+);
 
 router.post("/add/customer", async (req: Request, res: Response) => {
   try {
-    const { email, name } = req.body;
+    const { email, name, phone } = req.body;
     const stripe = new Stripe(secret_key as string, {
       apiVersion: "2023-10-16",
       typescript: true,
     });
 
+    const customers = await stripe.customers.list({ email });
+    const existingCustomer = customers.data[0];
+
+    if (existingCustomer) {
+      return res.status(400).json({ error: "Customer already exists" });
+    }
+
     const customer = await stripe.customers.create({
       email,
       name,
+      phone,
     });
 
     res.status(200).json({ success: true, data: customer });
@@ -84,37 +104,57 @@ router.post("/check-user", async (req: Request, res: Response) => {
   }
 });
 
-router.put("/update/:id", upload.single("img"), async (req: Request, res: Response) => {
-  try {
-    const userId = req.params.id;
-    const updateFields = req.body;
-    const newImage = req.file;
+router.put(
+  "/update/:id",
+  upload.single("img"),
+  async (req: Request, res: Response) => {
+    try {
+      const userId = req.params.id;
+      const updateFields = req.body;
+      const newImage = req.file;
 
-    if (newImage) {
-      updateFields.img = newImage.path;
-    }
-
-    if (updateFields.stripeCustomerId) {
-      const result = await User.findByIdAndUpdate(userId, { $set: { stripeCustomerId: updateFields.stripeCustomerId } }, { new: true });
-
-      if (!result) {
-        return res.status(404).json({ success: false, message: "User not found" });
+      if (newImage) {
+        updateFields.img = newImage.path;
       }
 
-      return res.status(200).json({ success: true, message: "User updated", data: result });
+      if (updateFields.stripeCustomerId) {
+        const result = await User.findByIdAndUpdate(
+          userId,
+          { $set: { stripeCustomerId: updateFields.stripeCustomerId } },
+          { new: true }
+        );
+
+        if (!result) {
+          return res
+            .status(404)
+            .json({ success: false, message: "User not found" });
+        }
+
+        return res
+          .status(200)
+          .json({ success: true, message: "User updated", data: result });
+      }
+
+      const result = await User.findByIdAndUpdate(
+        userId,
+        { $set: updateFields },
+        { new: true }
+      );
+
+      if (!result) {
+        return res
+          .status(404)
+          .json({ success: false, message: "User not found" });
+      }
+
+      res
+        .status(200)
+        .json({ success: true, message: "User updated", data: result });
+    } catch (error: any) {
+      res.status(500).json({ success: false, error: error.message });
     }
-
-    const result = await User.findByIdAndUpdate(userId, { $set: updateFields }, { new: true });
-
-    if (!result) {
-      return res.status(404).json({ success: false, message: "User not found" });
-    }
-
-    res.status(200).json({ success: true, message: "User updated", data: result });
-  } catch (error: any) {
-    res.status(500).json({ success: false, error: error.message });
   }
-});
+);
 
 router.delete("/delete/:id", async (req: Request, res: Response) => {
   try {
@@ -122,7 +162,9 @@ router.delete("/delete/:id", async (req: Request, res: Response) => {
     const result = await User.deleteOne({ _id: id });
 
     if (result.deletedCount === 0) {
-      return res.status(404).json({ success: false, message: "Document not found" });
+      return res
+        .status(404)
+        .json({ success: false, message: "Document not found" });
     }
 
     res.status(200).json({ success: true, message: "Deleted" });
