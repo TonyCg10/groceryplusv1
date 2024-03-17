@@ -7,7 +7,44 @@ const secret_key =
 
 const router = express.Router();
 
-router.get("/customer/:id", async (req: Request, res: Response) => {
+router.post("/add-customer", async (req: Request, res: Response) => {
+  try {
+    const { email, name, phone } = req.body;
+    
+    const stripe = new Stripe(secret_key as string, {
+      apiVersion: "2023-10-16",
+      typescript: true,
+    });
+
+    let customer = ''
+
+    const customers = await stripe.customers.list({ email });
+    const existingCustomer = customers.data[0];
+
+    if (existingCustomer) {
+      customer = existingCustomer.id
+    } else {
+      const createCustomer = await stripe.customers.create({
+        email,
+        name,
+        phone,
+      });
+
+      customer = createCustomer.id
+    }
+
+
+    console.log('add-customer =====');
+    console.log(customer);
+    console.log('=====');
+
+    res.status(200).json({ success: true, data: customer, message: "Customer created" });
+  } catch (error: any) {
+    res.status(500).json({ error: error.message });
+  }
+});
+
+router.get("/get-customer/:id", async (req: Request, res: Response) => {
   try {
     const customerId = req.params.id;
     const stripe = new Stripe(secret_key, {
@@ -22,7 +59,7 @@ router.get("/customer/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/payment-method", async (req: Request, res: Response) => {
+router.get("/add-payment-method", async (req: Request, res: Response) => {
   const { email } = req.body;
 
   try {
@@ -43,7 +80,7 @@ router.get("/payment-method", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/payment-method/:id", async (req: Request, res: Response) => {
+router.get("/get-payment-method/:id", async (req: Request, res: Response) => {
   try {
     const paymentMethodId = req.params.id;
     const stripe = new Stripe(secret_key, {
@@ -58,7 +95,7 @@ router.get("/payment-method/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/payments-intents", async (req: Request, res: Response) => {
+router.get("/get-payments-intents", async (req: Request, res: Response) => {
   const stripe = new Stripe(secret_key as string, {
     apiVersion: "2023-10-16",
     typescript: true,

@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "main": "server.ts",
   "scripts": {
-    "test": "jest",
     "build": "npx tsc",
     "start": "tsc && nodemon dist/server.js"
   },

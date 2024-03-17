@@ -7,7 +7,37 @@ const express_1 = __importDefault(require("express"));
 const stripe_1 = __importDefault(require("stripe"));
 const secret_key = "sk_test_51OtIvaFORGuFh6IZ488rjT7rHk1EZ7S1ddJCEj57g1fDkeHGcNB2VBEA9b5A82teh1rhqzYhrKYFxIiS5n4eqKwD00bCturkYt";
 const router = express_1.default.Router();
-router.get("/customer/:id", async (req, res) => {
+router.post("/add-customer", async (req, res) => {
+    try {
+        const { email, name, phone } = req.body;
+        const stripe = new stripe_1.default(secret_key, {
+            apiVersion: "2023-10-16",
+            typescript: true,
+        });
+        let customer = '';
+        const customers = await stripe.customers.list({ email });
+        const existingCustomer = customers.data[0];
+        if (existingCustomer) {
+            customer = existingCustomer.id;
+        }
+        else {
+            const createCustomer = await stripe.customers.create({
+                email,
+                name,
+                phone,
+            });
+            customer = createCustomer.id;
+        }
+        console.log('add-customer =====');
+        console.log(customer);
+        console.log('=====');
+        res.status(200).json({ success: true, data: customer, message: "Customer created" });
+    }
+    catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
+router.get("/get-customer/:id", async (req, res) => {
     try {
         const customerId = req.params.id;
         const stripe = new stripe_1.default(secret_key, {
@@ -20,7 +50,7 @@ router.get("/customer/:id", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-router.get("/payment-method", async (req, res) => {
+router.get("/add-payment-method", async (req, res) => {
     const { email } = req.body;
     try {
         const stripe = new stripe_1.default(secret_key, {
@@ -37,7 +67,7 @@ router.get("/payment-method", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-router.get("/payment-method/:id", async (req, res) => {
+router.get("/get-payment-method/:id", async (req, res) => {
     try {
         const paymentMethodId = req.params.id;
         const stripe = new stripe_1.default(secret_key, {
@@ -50,7 +80,7 @@ router.get("/payment-method/:id", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-router.get("/payments-intents", async (req, res) => {
+router.get("/get-payments-intents", async (req, res) => {
     const stripe = new stripe_1.default(secret_key, {
         apiVersion: "2023-10-16",
         typescript: true,
@@ -120,19 +150,12 @@ router.post("/create-payments-intents", async (req, res) => {
             customer: customer.data[0].id,
             payment_method_types: ["card"],
             payment_method: paymentMethodId,
-            confirmation_method: "manual",
-        });
-        const setupIntents = await stripe.setupIntents.create({
-            customer: customer.data[0].id,
-            payment_method: paymentMethodId,
-            payment_method_types: ["card"],
+            confirmation_method: "automatic",
         });
         res.status(200).json({
             paymentIntent: paymentIntent.client_secret,
             ephemeralKey: ephemeralKey.secret,
             customer: customer.data[0].id,
-            paymentStatus: paymentIntent.status,
-            setupIntents: setupIntents.client_secret,
         });
     }
     catch (error) {

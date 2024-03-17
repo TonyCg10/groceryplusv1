@@ -70,5 +70,4 @@ orderSchema.pre<OrderDocument>('find', function (next) {
   next();
 });
 
-
 export default mongoose.model<OrderDocument>('Order', orderSchema);

@@ -2,26 +2,28 @@ import express, { Request, Response } from "express";
 
 import multer from "multer";
 import path from "path";
-import Stripe from "stripe";
 
 import User from "../models/users";
 
 const router = express.Router();
 const upload = multer({ dest: path.join(__dirname, "../uploads") });
-const secret_key =
-  "sk_test_51OtIvaFORGuFh6IZ488rjT7rHk1EZ7S1ddJCEj57g1fDkeHGcNB2VBEA9b5A82teh1rhqzYhrKYFxIiS5n4eqKwD00bCturkYt";
 
-router.get("/", async (req: Request, res: Response) => {
+router.get("/get-users", async (_req: Request, res: Response) => {
   try {
     const data = await User.find();
-    res.json({ success: true, data: data, message: "Users gotten" });
+    
+    console.log('get-users =====');
+    console.log(data);
+    console.log('=====');
+    
+    res.status(200).json({ success: true, data: data, message: "Users gotten" });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
 router.post(
-  "/users",
+  "/create-user",
   upload.single("img"),
   async (req: Request, res: Response) => {
     try {
@@ -38,41 +40,18 @@ router.post(
       });
       const savedUser = await newUser.save();
 
+      console.log('create-user =====');
+      console.log(savedUser);
+      console.log('=====');
+
       res
-        .status(201)
+        .status(200)
         .json({ success: true, data: savedUser, message: "User created" });
     } catch (error: any) {
-      res.status(500).json({ error: error.message });
+      res.status(500).json({ success: false, error: error.message });
     }
   }
 );
-
-router.post("/add/customer", async (req: Request, res: Response) => {
-  try {
-    const { email, name, phone } = req.body;
-    const stripe = new Stripe(secret_key as string, {
-      apiVersion: "2023-10-16",
-      typescript: true,
-    });
-
-    const customers = await stripe.customers.list({ email });
-    const existingCustomer = customers.data[0];
-
-    if (existingCustomer) {
-      return res.status(400).json({ error: "Customer already exists" });
-    }
-
-    const customer = await stripe.customers.create({
-      email,
-      name,
-      phone,
-    });
-
-    res.status(200).json({ success: true, data: customer });
-  } catch (error: any) {
-    res.status(500).json({ error: error.message });
-  }
-});
 
 router.post("/check-user", async (req: Request, res: Response) => {
   try {
@@ -94,8 +73,12 @@ router.post("/check-user", async (req: Request, res: Response) => {
 
     const user = await User.findOne(query);
 
+    console.log('check-user =====');
+    console.log(user);
+    console.log('=====');
+
     if (user) {
-      res.status(200).json({ exists: true, user, message: "Found" });
+      res.status(200).json({ exists: true, data: user, message: "Found" });
     } else {
       res.status(200).json({ exists: false, message: "Not Found" });
     }
@@ -105,9 +88,9 @@ router.post("/check-user", async (req: Request, res: Response) => {
 });
 
 router.put(
-  "/update/:id",
+  "/update-user/:id",
   upload.single("img"),
-  async (req: Request, res: Response) => {
+  async (req, res) => {
     try {
       const userId = req.params.id;
       const updateFields = req.body;
@@ -115,26 +98,11 @@ router.put(
 
       if (newImage) {
         updateFields.img = newImage.path;
+        console.log(req.file);
       }
 
-      if (updateFields.stripeCustomerId) {
-        const result = await User.findByIdAndUpdate(
-          userId,
-          { $set: { stripeCustomerId: updateFields.stripeCustomerId } },
-          { new: true }
-        );
-
-        if (!result) {
-          return res
-            .status(404)
-            .json({ success: false, message: "User not found" });
-        }
-
-        return res
-          .status(200)
-          .json({ success: true, message: "User updated", data: result });
-      }
-
+      console.log(req.file);
+      
       const result = await User.findByIdAndUpdate(
         userId,
         { $set: updateFields },
@@ -146,17 +114,21 @@ router.put(
           .status(404)
           .json({ success: false, message: "User not found" });
       }
+      console.log('update-user #####');
+      console.log(result);
+      console.log('#####');
 
       res
         .status(200)
-        .json({ success: true, message: "User updated", data: result });
+        .json({ success: true, data: result, message: "User updated" });
     } catch (error: any) {
       res.status(500).json({ success: false, error: error.message });
     }
   }
 );
 
-router.delete("/delete/:id", async (req: Request, res: Response) => {
+
+router.delete("/delete-user/:id", async (req: Request, res: Response) => {
   try {
     const id = req.params.id;
     const result = await User.deleteOne({ _id: id });
@@ -167,7 +139,11 @@ router.delete("/delete/:id", async (req: Request, res: Response) => {
         .json({ success: false, message: "Document not found" });
     }
 
-    res.status(200).json({ success: true, message: "Deleted" });
+    console.log('delete-user =====');
+    console.log(result);
+    console.log('=====');
+
+    res.status(200).json({ success: true, data: result, message: "Deleted" });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
