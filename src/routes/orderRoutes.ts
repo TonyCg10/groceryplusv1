@@ -4,43 +4,55 @@ import Order, { OrderType } from "../models/orders";
 
 const router = Router();
 
-router.get("/", async (req: Request, res: Response) => {
+router.get("/get-orders", async (req: Request, res: Response) => {
   try {
     const data = await Order.find();
 
-    res.json({ success: true, data: data, message: "Orders gotten" });
+    console.log('get-orders =====');
+    console.log(data);
+    console.log('=====');
+
+    res.status(200).json({ success: true, data: data, message: "Orders gotten" });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-router.get("/:userId", async (req: Request, res: Response) => {
+router.get("/get-user-order/:userId", async (req: Request, res: Response) => {
   try {
     const userId: string = req.params.userId;
     const orders = await Order.find({ userId });
 
-    res.json({ success: true, data: orders, message: "Orders found" });
+    console.log('get-user-order =====');
+    console.log(orders);
+    console.log('=====');
+
+    res.status(200).json({ success: true, data: orders, message: "Orders found" });
   } catch (error: any) {
     res.status(500).json({ success: false, error: error.message });
   }
 });
 
-router.post("/orders", async (req: Request, res: Response) => {
+router.post("/create-orders", async (req: Request, res: Response) => {
   try {
     const { userId, products, issuedDate, hours, status } = req.body;
 
     const newOrder = new Order({ userId, products, issuedDate, hours, status });
     const savedOrder = await newOrder.save();
 
+    console.log('create-orders =====');
+    console.log(savedOrder);
+    console.log('=====');
+
     res
-      .status(201)
+      .status(200)
       .json({ success: true, data: savedOrder, message: "Order created" });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.put("/update/:id", async (req: Request, res: Response) => {
+router.put("/update-order/:id", async (req: Request, res: Response) => {
   try {
     const order = await Order.findByIdAndUpdate(req.params.id, req.body, {
       new: true,
@@ -49,26 +61,40 @@ router.put("/update/:id", async (req: Request, res: Response) => {
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    res.json(order);
+
+    console.log('update-order =====');
+    console.log(order);
+    console.log('=====');
+
+    res
+      .status(200)
+      .json({ success: true, data: order, message: "Order updated" });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.delete("/delete/:id", async (req: Request, res: Response) => {
+router.delete("/delete-order/:id", async (req: Request, res: Response) => {
   try {
     const order = await Order.findByIdAndDelete(req.params.id);
 
     if (!order) {
       return res.status(404).json({ message: "Order not found" });
     }
-    res.json({ message: "Order deleted" });
+
+    console.log('delete-order =====');
+    console.log(order);
+    console.log('=====');
+
+    res
+      .status(200)
+      .json({ success: true, data: order, message: "Order deleted" });
   } catch (error: any) {
     res.status(500).json({ error: error.message });
   }
 });
 
-router.delete("/deleteProduct/:orderId/:productId", async (req: Request, res: Response) => {
+router.delete("/delete-roduct-order/:orderId/:productId", async (req: Request, res: Response) => {
   try {
     const orderId: string = req.params.orderId;
     const productId: string = req.params.productId;
