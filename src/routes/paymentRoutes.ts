@@ -59,7 +59,7 @@ router.get("/get-customer/:id", async (req: Request, res: Response) => {
   }
 });
 
-router.get("/add-payment-method", async (req: Request, res: Response) => {
+router.get("/get-payments-method", async (req: Request, res: Response) => {
   const { email } = req.body;
 
   try {
