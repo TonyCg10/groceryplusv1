@@ -50,7 +50,7 @@ router.get("/get-customer/:id", async (req, res) => {
         res.status(500).json({ error: error.message });
     }
 });
-router.get("/add-payment-method", async (req, res) => {
+router.get("/get-payments-method", async (req, res) => {
     const { email } = req.body;
     try {
         const stripe = new stripe_1.default(secret_key, {

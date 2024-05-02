@@ -1,7 +1,7 @@
 // export const IP: string = 'localhost';
-export const IP: string = '10.0.0.139';
+export const IP = '127.0.0.1'
 
-export const PORT: number = 2020;
+export const PORT = 8000
 
 export const URL: string = `http://${IP}:${PORT}`;
 
